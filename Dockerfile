@@ -20,7 +20,7 @@ ADD --chown=app poetry.lock .
 RUN poetry install
 
 WORKDIR /code/front
-ADD --chown=app . .
+ADD --chown=app front .
 RUN npm run generate
 
 WORKDIR /code
