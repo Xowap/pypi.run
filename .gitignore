@@ -1,0 +1,7 @@
+.idea
+*.pyc
+.vscode
+*.swp
+*.un~
+dist
+*.egg-info

@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "pypi_run"
+version = "1.0.0a1"
+description = "A project"
+authors = ["Rémy Sanchez <remy.sanchez@hyperthese.net>"]
+license = "WTFPL"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+blacksheep = "^1.2.7"
+uvicorn = "^0.18.3"
+
+[tool.poetry.dev-dependencies]
+black = "^22.8.0"
+isort = "^5.10.1"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.isort]
+profile = "black"
