@@ -7,7 +7,6 @@ from a Python package that is not necessarily installed in the system and that
 you want to put in your documentation as a one-liner. For example you can use
 this to create a new project instance from a project generator package.
 """
-
 import os
 from argparse import ArgumentParser, Namespace
 from contextlib import contextmanager
@@ -17,7 +16,7 @@ from pathlib import Path
 from queue import Queue
 from signal import SIGTERM, signal
 from subprocess import PIPE, Popen
-from sys import argv, path, stderr
+from sys import path, stderr, stdout, stdin, argv
 from tempfile import TemporaryDirectory
 from threading import Thread
 from time import sleep
@@ -112,6 +111,28 @@ class MakerEnv(EnvBuilder):
             else:
                 raise Exception(f"Subsequent command failed")
 
+    def handover(self, command_args):
+        """
+        This will replace the main process by the Python module we're trying to
+        run and then will keep running in the background waiting for the parent
+        to die in order to cleanup the virtualenv directory (which will be
+        implicitly cleaned once the function returns).
+        """
+
+        args = [self.context.env_exe, *command_args]
+
+        if os.fork():
+            os.execve(args[0], args, os.environ)
+        else:
+            parent = os.getppid()
+
+            while True:
+                try:
+                    sleep(1)
+                    os.kill(parent, 0)
+                except OSError:
+                    break
+
     def install_pip(self):
         """
         Apparently we need to install Pip from the outside
@@ -183,6 +204,25 @@ def temp_venv(requirements: Sequence[str]):
         yield builder
 
 
+def restore_stdin():
+    """
+    So basically the goal of this command is to run piped, which means that the
+    stdin is actually the stream of source code. If we want to run interactive
+    commands like that, we're screwed.
+
+    That's why this function will try to restore stdin from the pty. Not sure
+    how solid this approach is but it works on my machine.
+    """
+
+    if stdin.isatty():
+        return
+
+    tty = os.ttyname(stdout.fileno())
+
+    stolen_stdin = open(tty, 'r')
+    os.dup2(stolen_stdin.fileno(), 0)
+
+
 def parse_args(custom_argv: Optional[Sequence[str]] = None) -> Namespace:
     """
     Arguments parsing for main()
@@ -202,13 +242,14 @@ def main(custom_argv: Optional[Sequence[str]] = None):
     and forwarding the arguments we received
     """
 
+    restore_stdin()
     args = parse_args(custom_argv)
 
     if not (module := args.module):
         module = args.package
 
     with temp_venv([args.package]) as builder:
-        builder.run_command(["-m", module, *args.args], pipe=False)
+        builder.handover(["-m", module, *args.args])
 
 
 if __name__ == "__main__":
