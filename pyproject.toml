@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pypi_run"
-version = "1.0.0a1"
+version = "1.0.0a2"
 description = "A project"
 authors = ["Rémy Sanchez <remy.sanchez@hyperthese.net>"]
 license = "WTFPL"
