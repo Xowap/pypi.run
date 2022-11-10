@@ -1,0 +1,13 @@
+version: 1.0
+runtime: python3
+build:
+  commands:
+    build:
+      - poetry install
+      - cd front && npm install && npm run generate
+run:
+  runtime-version: 3.10.7
+  command: poetry run python -m uvicorn pypi_run.server:app --port $PORT --host 0.0.0.0
+  network:
+    port: 8000
+    env: PORT
